@@ -1,6 +1,6 @@
 import functools
 import types
-from ..utils import partition_tree_shuffle, MaskedModel
+from ..utils import partition_shuffle, partition_tree_shuffle, MaskedModel
 from .._explanation import Explanation
 from ._explainer import Explainer
 import numpy as np
@@ -113,9 +113,14 @@ class Permutation(Explainer):
 
                 # shuffle the indexes so we get a random permutation ordering
                 if row_clustering is not None:
-                    # [TODO] This is shuffle does not work when inds is not a complete set of integers from 0 to M TODO: still true?
-                    #assert len(inds) == len(fm), "Need to support partition shuffle when not all the inds vary!!"
-                    partition_tree_shuffle(inds, inds_mask, row_clustering)
+                    # User-specified non-hiearchical partition
+                    if row_clustering.dtype == object:
+                        partition_shuffle(inds, inds_mask, row_clustering)
+                    # Clustering-based hiearchical partitions
+                    else:
+                        # [TODO] This is shuffle does not work when inds is not a complete set of integers from 0 to M TODO: still true?
+                        #assert len(inds) == len(fm), "Need to support partition shuffle when not all the inds vary!!"
+                        partition_tree_shuffle(inds, inds_mask, row_clustering)
                 else:
                     np.random.shuffle(inds)
 

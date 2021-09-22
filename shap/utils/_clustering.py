@@ -8,6 +8,21 @@ from ._general import safe_isinstance
 from ._show_progress import show_progress
 
 
+def partition_shuffle(indexes, index_mask, coallitions):
+    # Admissible permutations
+    np.random.shuffle(coallitions)
+    for i in range(len(coallitions)):
+        np.random.shuffle(coallitions[i])
+    perm = np.hstack(coallitions).astype(int)
+
+    # Remove non-varying features
+    current_idx = 0
+    for feature_idx in perm:
+        if index_mask[feature_idx]:
+            indexes[current_idx] = feature_idx
+            current_idx += 1
+
+
 def partition_tree(X, metric="correlation"):
     X_full_rank = X + np.random.randn(*X.shape) * 1e-8
     D = sp.spatial.distance.pdist(X_full_rank.fillna(X_full_rank.mean()).T, metric=metric)
