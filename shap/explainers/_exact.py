@@ -60,6 +60,9 @@ class Exact(Explainer):
 
         self._gray_code_cache = {} # used to avoid regenerating the same gray code patterns
 
+        # Hack for getting attribution of individual background instances
+        self.values_all_background = []
+
     def __call__(self, *args, max_evals=100000, main_effects=False, error_bounds=False, batch_size="auto", interactions=1, silent=False):
         """ Explains the output of model(*args), where args represents one or more parallel iterators.
         """
@@ -121,6 +124,12 @@ class Exact(Explainer):
                 mask = np.zeros(len(fm), dtype=np.bool)
                 _compute_grey_code_row_values(row_values, mask, inds, outputs, coeff, extended_delta_indexes, MaskedModel.delta_mask_noop_value)
 
+                ## Hack ##
+                row_values_all_background = np.zeros((len(fm), outputs.shape[1], fm.all_background_evals.shape[-1]))
+                mask = np.zeros(len(fm), dtype=np.bool)
+                _compute_grey_code_row_values(row_values_all_background, mask, inds, fm.all_background_evals, coeff, extended_delta_indexes, MaskedModel.delta_mask_noop_value)
+                self.values_all_background.append(row_values_all_background)
+                
             # Shapley-Taylor interaction values
             elif interactions is True or interactions is 2: # pylint: disable=literal-comparison
 
