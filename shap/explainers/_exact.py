@@ -125,7 +125,7 @@ class Exact(Explainer):
                 _compute_grey_code_row_values(row_values, mask, inds, outputs, coeff, extended_delta_indexes, MaskedModel.delta_mask_noop_value)
 
                 ## Hack ##
-                row_values_all_background = np.zeros((len(fm), outputs.shape[1], fm.all_background_evals.shape[-1]))
+                row_values_all_background = np.zeros( (len(fm),) + outputs.shape[1:] + (fm.all_background_evals.shape[-1],) )
                 mask = np.zeros(len(fm), dtype=np.bool)
                 _compute_grey_code_row_values(row_values_all_background, mask, inds, fm.all_background_evals, coeff, extended_delta_indexes, MaskedModel.delta_mask_noop_value)
                 self.values_all_background.append(row_values_all_background)

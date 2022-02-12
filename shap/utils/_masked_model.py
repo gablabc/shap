@@ -207,12 +207,13 @@ class MaskedModel():
             self.background_outputs = outputs[batch_positions[zero_index]:batch_positions[zero_index+1]]
             self._linearizing_weights = link_reweighting(self.background_outputs, self.link)
 
-        averaged_outs = np.zeros((varying_rows.shape[0],) + outputs.shape[1:])
+        # Hack store all single reference attributions
+        self.all_background_evals = np.zeros((varying_rows.shape[0],) + outputs.shape[1:] + (varying_rows.shape[1],) )
         last_outs = np.zeros((varying_rows.shape[1],) + outputs.shape[1:])
         #print("link", self.link)
-        _build_fixed_output(averaged_outs, last_outs, outputs, batch_positions, varying_rows, num_varying_rows, self.link, self._linearizing_weights)
+        _build_fixed_output(self.all_background_evals, last_outs, outputs, batch_positions, varying_rows, num_varying_rows, self.link, self._linearizing_weights)
 
-        return averaged_outs
+        return np.mean(self.all_background_evals, axis=-1)
 
     @property
     def mask_shapes(self):
@@ -398,7 +399,7 @@ def _build_fixed_multi_output(averaged_outs, last_outs, outputs, batch_positions
                     averaged_outs[i,j] = np.mean(linearizing_weights[:,j] * link(last_outs[:,j]))
             else:
                 for j in range(last_outs.shape[-1]): # using -1 is important
-                    averaged_outs[i,j] = link(np.mean(last_outs[:,j])) # we can't just do np.mean(last_outs, 0) because that fails to numba compile
+                    averaged_outs[i,j] = link(last_outs[:,j]) # we can't just do np.mean(last_outs, 0) because that fails to numba compile
         else:
             averaged_outs[i] = averaged_outs[i-1]
 
