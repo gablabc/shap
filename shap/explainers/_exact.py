@@ -60,8 +60,9 @@ class Exact(Explainer):
 
         self._gray_code_cache = {} # used to avoid regenerating the same gray code patterns
 
-        # Hack for getting attribution of individual background instances
+        # Hack for getting attribution of individual background instances and all LSV
         self.values_all_background = []
+        self.LSV = []
 
     def __call__(self, *args, max_evals=100000, main_effects=False, error_bounds=False, batch_size="auto", interactions=1, silent=False):
         """ Explains the output of model(*args), where args represents one or more parallel iterators.
@@ -69,10 +70,14 @@ class Exact(Explainer):
 
         # we entirely rely on the general call implementation, we override just to remove **kwargs
         # from the function signature
-        return super(Exact, self).__call__(
+        out =  super(Exact, self).__call__(
             *args, max_evals=max_evals, main_effects=main_effects, error_bounds=error_bounds,
             batch_size=batch_size, interactions=interactions, silent=silent
         )
+        # Hack to get Local Shapley Values (LSV) of shape (n_features, n_foreground, n_background)
+        self.LSV = np.stack(self.values_all_background)[:, :, 1, :].transpose(1, 0, 2)
+        
+        return out
 
     def _cached_gray_codes(self, n):
         if n not in self._gray_code_cache:
@@ -120,15 +125,16 @@ class Exact(Explainer):
 
                 # loop over all the outputs to update the rows
                 coeff = shapley_coefficients(len(inds))
-                row_values = np.zeros((len(fm),) + outputs.shape[1:])
-                mask = np.zeros(len(fm), dtype=np.bool)
-                _compute_grey_code_row_values(row_values, mask, inds, outputs, coeff, extended_delta_indexes, MaskedModel.delta_mask_noop_value)
+                #row_values = np.zeros((len(fm),) + outputs.shape[1:])
+                #mask = np.zeros(len(fm), dtype=np.bool)
+                #_compute_grey_code_row_values(row_values, mask, inds, outputs, coeff, extended_delta_indexes, MaskedModel.delta_mask_noop_value)
 
                 ## Hack ##
                 row_values_all_background = np.zeros( (len(fm),) + outputs.shape[1:] + (fm.all_background_evals.shape[-1],) )
                 mask = np.zeros(len(fm), dtype=np.bool)
                 _compute_grey_code_row_values(row_values_all_background, mask, inds, fm.all_background_evals, coeff, extended_delta_indexes, MaskedModel.delta_mask_noop_value)
                 self.values_all_background.append(row_values_all_background)
+                row_values = row_values_all_background.mean(-1)
                 
             # Shapley-Taylor interaction values
             elif interactions is True or interactions is 2: # pylint: disable=literal-comparison
